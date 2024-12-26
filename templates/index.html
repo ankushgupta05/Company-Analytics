@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Selection</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Make the submit button section sticky */
+        .sticky-buttons {
+            position: sticky;
+            top: 20px;  /* Adjust the top distance if needed */
+            z-index: 10;  /* Ensure buttons stay on top of other content */
+            background-color: white;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex justify-center items-start min-h-screen">
+    <div class="container flex w-full max-w-full bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Left Side (Checkboxes) -->
+        <div class="h-screen p-5 overflow-y-auto border-r w-1/5">
+            <h1 class="text-2xl font-semibold mb-5 text-center">Select Company Name</h1>
+            <form action="/" method="POST">
+                <ul class="space-y-3">
+                    {% for name in index_name_list %}
+                    <li class="flex space-x-2">
+                        <input type="radio" name="index_name" value="{{ name }}" 
+                            class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500" {% if name == selected_index %} checked {% endif %}>
+                        <span class="text-gray-700">{{ name }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <!-- Sticky Button Section -->
+<div class="fixed top-5 right-5 z-10 bg-white border border-gray-200 shadow-md rounded-lg p-3 flex gap-3">
+    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+        Submit
+    </button>
+    <button type="submit" name="clear" value="true"
+        class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+        Clear Selection
+    </button>
+</div>
+
+                
+                <!-- Sticky Button Section -->
+                <!-- <div class="sticky-buttons flex space-x-3 justify-center mt-10">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                        Submit
+                    </button>
+                    <button type="submit" name="clear" value="true"
+                        class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                        Clear Selection
+                    </button>
+                </div> -->
+            </form>
+        </div>
+
+        <!-- Right Side (Output - Charts in 2 per row) -->
+        <div class="w-3/4 p-5 overflow-y-auto">
+            {% if selected_index %}
+            <h2 class="text-2xl font-semibold text-gray-800 mb-5">Selected Index: {{ selected_index }}</h2>
+            
+            <!-- Row 1: Two charts -->
+            <div class="flex space-x-5 mb-7">
+                <div class="w-1/2 p-4 border border-gray-200 rounded-lg shadow-lg">
+                    <h3 class="text-center font-semibold text-gray-700 mb-3">Line Chart</h3>
+                    <canvas id="myChart1" class="w-full h-64"></canvas>
+                </div>
+                <div class="w-1/2 p-4 border border-gray-200 rounded-lg shadow-lg">
+                    <h3 class="text-center font-semibold text-gray-700 mb-3">Bar Chart</h3>
+                    <canvas id="myChart3" class="w-full h-64"></canvas>
+                </div>
+            </div>
+            
+            <hr class="my-5">
+            
+            <!-- Row 2: Two charts -->
+            <div class="flex space-x-5 mb-7">
+                <div class="w-1/2 p-4 border border-gray-200 rounded-lg shadow-lg">
+                    <h3 class="text-center font-semibold text-gray-700 mb-3">Pie Chart</h3>
+                    <canvas id="myChart2" class="w-full h-64"></canvas>
+                </div>
+                <div class="w-1/2 p-4 border border-gray-200 rounded-lg shadow-lg">
+                    <h3 class="text-center font-semibold text-gray-700 mb-3">Doughnut Chart</h3>
+                    <canvas id="myChart4" class="w-full h-64"></canvas>
+                </div>
+            </div>
+            
+            <hr class="my-5">
+
+            <!-- Row 3: Two charts -->
+            <div class="flex space-x-5 mb-7">
+                <div class="w-1/2 p-4 border border-gray-200 rounded-lg shadow-lg">
+                    <h3 class="text-center font-semibold text-gray-700 mb-3">Polar Area Chart</h3>
+                    <canvas id="myChart5" class="w-full h-64"></canvas>
+                </div>
+                <div class="w-1/2 p-4 border border-gray-200 rounded-lg shadow-lg">
+                    <h3 class="text-center font-semibold text-gray-700 mb-3">Radar Chart</h3>
+                    <canvas id="myChart6" class="w-full h-64"></canvas>
+                </div>
+            </div>
+
+            {% else %}
+            <p class="text-gray-700 mt-5 text-center">No index selected. Please select an index from the left.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Function to generate a random color
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Check if filtered_data exists
+        var filteredData = {{ filtered_data | tojson }};
+        console.log(filteredData);
+
+        // Helper function to generate an array of colors for each data point
+        var colors = filteredData.index_date.map(() => getRandomColor());
+
+        // Chart 1 - Line chart
+        if (filteredData.index_date && filteredData.volume) {
+            var ctx = document.getElementById('myChart1').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: filteredData.index_date,
+                    datasets: [{
+                        label: 'Volume',
+                        data: filteredData.volume,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+
+        // Chart 2 - Pie chart
+        if (filteredData.index_date && filteredData.volume) {
+            var ctx = document.getElementById('myChart2').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: filteredData.index_date,
+                    datasets: [{
+                        label: 'Volume',
+                        data: filteredData.volume,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+
+        // Chart 3 - Bar chart
+        if (filteredData.index_date && filteredData.volume) {
+            var ctx = document.getElementById('myChart3').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: filteredData.index_date,
+                    datasets: [{
+                        label: 'Volume',
+                        data: filteredData.volume,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+
+        // Chart 4 - Doughnut chart
+        if (filteredData.index_date && filteredData.volume) {
+            var ctx = document.getElementById('myChart4').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: filteredData.index_date,
+                    datasets: [{
+                        label: 'Volume',
+                        data: filteredData.volume,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+
+        // Chart 5 - PolarArea chart
+        if (filteredData.index_date && filteredData.volume) {
+            var ctx = document.getElementById('myChart5').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: filteredData.index_date,
+                    datasets: [{
+                        label: 'Volume',
+                        data: filteredData.volume,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+
+        // Chart 6 - Radar chart
+        if (filteredData.index_date && filteredData.volume) {
+            var ctx = document.getElementById('myChart6').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: filteredData.index_date,
+                    datasets: [{
+                        label: 'Volume',
+                        data: filteredData.volume,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
